@@ -6,7 +6,6 @@ export const RvizBottomBar: React.FC = () => {
   const simTime = useSimulationStore((s) => s.simTime);
   const fixedFrame = useSimulationStore((s) => s.fixedFrame);
   const navigation = useSimulationStore((s) => s.navigation);
-  const robot = useSimulationStore((s) => s.robot);
   const scanData = useSimulationStore((s) => s.scanData);
 
   return (

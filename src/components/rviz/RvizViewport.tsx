@@ -1,10 +1,10 @@
 import React, { useRef, useEffect } from 'react';
 import { Canvas, ThreeEvent } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import * as THREE from 'three';
 import { useSimulationStore } from '../../state/simulationStore';
 import { TurtleBot3Burger } from '../../robot/models/TurtleBot3Burger';
 import { RvizLayers } from './RvizLayers';
+import { ResponsiveCanvasManager } from '../common/ResponsiveCanvasManager';
 
 export const RvizViewport: React.FC = () => {
   const robot = useSimulationStore((s) => s.robot);
@@ -20,6 +20,7 @@ export const RvizViewport: React.FC = () => {
   const setRvizTool = useSimulationStore((s) => s.setRvizTool);
   const setNavGoal = useSimulationStore((s) => s.setNavGoal);
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const controlsRef = useRef<any>(null);
 
   // Listen for RViz camera preset events
@@ -55,7 +56,10 @@ export const RvizViewport: React.FC = () => {
   };
 
   return (
-    <div className="w-full h-full relative bg-[#121316] overflow-hidden">
+    <div
+      ref={containerRef}
+      className="w-full h-full relative bg-[#121316] overflow-hidden min-h-0 min-w-0"
+    >
       {/* 2D Nav Goal Cursor Banner */}
       {rvizTool === 'nav_goal' && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 bg-red-600/90 text-white font-semibold px-4 py-1.5 rounded-full shadow-lg border border-red-400 text-xs flex items-center space-x-2 animate-bounce">
@@ -64,8 +68,12 @@ export const RvizViewport: React.FC = () => {
       )}
 
       <Canvas
+        resize={{ scroll: false, debounce: 0 }}
         camera={{ position: [-3.0, -3.0, 3.5], fov: 45, up: [0, 0, 1] }}
       >
+        {/* Real-time zero-delay Canvas resizing manager */}
+        <ResponsiveCanvasManager containerRef={containerRef} />
+
         {/* RViz Dark Engineering Background */}
         <color attach="background" args={['#14171c']} />
         <ambientLight intensity={0.8} />
@@ -127,4 +135,3 @@ export const RvizViewport: React.FC = () => {
     </div>
   );
 };
-

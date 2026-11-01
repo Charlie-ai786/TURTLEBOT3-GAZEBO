@@ -3,14 +3,20 @@ import { useSimulationStore } from '../../state/simulationStore';
 
 export const GazeboMenuBar: React.FC = () => {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [showAboutModal, setShowAboutModal] = useState(false);
 
   const resetWorld = useSimulationStore((s) => s.resetWorld);
   const resetSimulation = useSimulationStore((s) => s.resetSimulation);
   const toggleCollisionGeometry = useSimulationStore((s) => s.toggleCollisionGeometry);
   const showCollision = useSimulationStore((s) => s.showCollisionGeometry);
+  const showGridFloor = useSimulationStore((s) => s.showGridFloor);
+  const toggleGridFloor = useSimulationStore((s) => s.toggleGridFloor);
+  const showShadows = useSimulationStore((s) => s.showShadows);
+  const toggleShadows = useSimulationStore((s) => s.toggleShadows);
   const toggleTerminal = useSimulationStore((s) => s.toggleTerminal);
   const toggleTopicMonitor = useSimulationStore((s) => s.toggleTopicMonitor);
   const togglePracticals = useSimulationStore((s) => s.togglePracticals);
+  const toggleSettings = useSimulationStore((s) => s.toggleSettings);
 
   const handleMenuClick = (menu: string) => {
     setActiveMenu(activeMenu === menu ? null : menu);
@@ -55,7 +61,7 @@ export const GazeboMenuBar: React.FC = () => {
               }}
               className="w-full text-left px-3 py-1 hover:bg-[#2c5282] hover:text-white"
             >
-              Reset World Poses
+              Reset Model Poses
             </button>
             <div className="border-t border-[#555] my-1"></div>
             <button
@@ -101,6 +107,16 @@ export const GazeboMenuBar: React.FC = () => {
             >
               Reset World Simulation (Ctrl+R)
             </button>
+            <div className="border-t border-[#555] my-1"></div>
+            <button
+              onClick={() => {
+                toggleSettings();
+                closeMenu();
+              }}
+              className="w-full text-left px-3 py-1 hover:bg-[#2c5282] hover:text-white"
+            >
+              Preferences / Settings
+            </button>
           </div>
         )}
       </div>
@@ -129,18 +145,24 @@ export const GazeboMenuBar: React.FC = () => {
               <span>{showCollision ? '✓' : ''}</span>
             </button>
             <button
-              onClick={closeMenu}
+              onClick={() => {
+                toggleGridFloor();
+                closeMenu();
+              }}
               className="w-full text-left px-3 py-1 hover:bg-[#2c5282] hover:text-white flex justify-between"
             >
               <span>Grid Floor</span>
-              <span>✓</span>
+              <span>{showGridFloor ? '✓' : ''}</span>
             </button>
             <button
-              onClick={closeMenu}
+              onClick={() => {
+                toggleShadows();
+                closeMenu();
+              }}
               className="w-full text-left px-3 py-1 hover:bg-[#2c5282] hover:text-white flex justify-between"
             >
               <span>Shadows</span>
-              <span>✓</span>
+              <span>{showShadows ? '✓' : ''}</span>
             </button>
           </div>
         )}
@@ -204,12 +226,15 @@ export const GazeboMenuBar: React.FC = () => {
             className="absolute top-6 left-0 w-52 bg-[#3c3f41] border border-[#555] shadow-lg py-1 z-50 text-xs"
             onMouseLeave={closeMenu}
           >
-            <div className="px-3 py-1 text-gray-400 text-[11px]">
-              ROS Gazebo Classic 11.14
-            </div>
-            <div className="px-3 py-1 text-gray-400 text-[11px]">
-              TurtleBot3 Burger Simulator
-            </div>
+            <button
+              onClick={() => {
+                setShowAboutModal(true);
+                closeMenu();
+              }}
+              className="w-full text-left px-3 py-1 hover:bg-[#2c5282] hover:text-white"
+            >
+              About Gazebo Classic & TurtleBot3
+            </button>
           </div>
         )}
       </div>
@@ -237,7 +262,33 @@ export const GazeboMenuBar: React.FC = () => {
           📡 /topics
         </button>
       </div>
+
+      {/* About Modal */}
+      {showAboutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-[#24252a] border border-[#444] rounded-lg p-5 w-96 text-gray-200 space-y-3 shadow-2xl">
+            <h3 className="text-base font-bold text-white flex items-center space-x-2">
+              <span className="text-[#ff9800]">Gazebo Classic 11.14</span>
+              <span className="text-xs text-gray-400 font-normal">Browser Recreation</span>
+            </h3>
+            <p className="text-xs text-gray-300 leading-relaxed">
+              This application faithfully reproduces the Gazebo Classic 11 physics simulation environment and the ROS Noetic RViz sensor visualizer for the TurtleBot3 Burger mobile robot.
+            </p>
+            <div className="text-[11px] text-gray-400 space-y-1 bg-[#1a1b1f] p-2.5 rounded border border-[#333]">
+              <div>• Kinematics: Differential Drive (2x DYNAMIXEL XL430)</div>
+              <div>• Sensors: LDS-01 360° LiDAR, Odometry, IMU</div>
+              <div>• Mapping: 2D Occupancy Grid SLAM</div>
+              <div>• Navigation: A* Global Planner + Local Costmaps</div>
+            </div>
+            <button
+              onClick={() => setShowAboutModal(false)}
+              className="w-full py-1.5 bg-[#2980b9] hover:bg-[#3498db] text-white rounded font-semibold text-xs"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-

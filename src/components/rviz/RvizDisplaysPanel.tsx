@@ -7,9 +7,9 @@ import {
   Plus,
   Trash2,
   Copy,
-  Info,
+  X,
 } from 'lucide-react';
-import { useSimulationStore, RvizDisplaySettings } from '../../state/simulationStore';
+import { useSimulationStore } from '../../state/simulationStore';
 
 export const RvizDisplaysPanel: React.FC = () => {
   const displays = useSimulationStore((s) => s.rvizDisplays);
@@ -17,6 +17,9 @@ export const RvizDisplaysPanel: React.FC = () => {
   const updateDisplaySetting = useSimulationStore((s) => s.updateDisplaySetting);
   const fixedFrame = useSimulationStore((s) => s.fixedFrame);
   const setFixedFrame = useSimulationStore((s) => s.setFixedFrame);
+
+  const [selectedDisplayKey, setSelectedDisplayKey] = useState<keyof typeof displays | null>('laserScan');
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     globalOptions: true,
@@ -35,8 +38,32 @@ export const RvizDisplaysPanel: React.FC = () => {
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const handleAddDisplay = (key: keyof typeof displays) => {
+    if (!displays[key].visible) {
+      toggleDisplay(key);
+    }
+    setExpanded((prev) => ({ ...prev, [key]: true }));
+    setSelectedDisplayKey(key);
+    setShowAddModal(false);
+  };
+
+  const handleDuplicate = () => {
+    if (!selectedDisplayKey) return;
+    // Highlight and ensure visible
+    if (!displays[selectedDisplayKey].visible) {
+      toggleDisplay(selectedDisplayKey);
+    }
+  };
+
+  const handleRemove = () => {
+    if (!selectedDisplayKey) return;
+    if (displays[selectedDisplayKey].visible) {
+      toggleDisplay(selectedDisplayKey);
+    }
+  };
+
   return (
-    <div className="w-72 bg-[#262626] border-r border-[#1a1a1a] text-[#cccccc] flex flex-col text-xs select-none h-full">
+    <div className="w-72 bg-[#262626] border-r border-[#1a1a1a] text-[#cccccc] flex flex-col text-xs select-none h-full relative">
       {/* Panel Header */}
       <div className="px-3 py-1.5 bg-[#333333] border-b border-[#1f1f1f] font-semibold text-[11px] text-white flex items-center justify-between">
         <span>Displays</span>
@@ -72,14 +99,17 @@ export const RvizDisplaysPanel: React.FC = () => {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-gray-400">Background:</span>
-                <span className="text-gray-300 font-mono">#1a1e24</span>
+                <span className="text-gray-300 font-mono">#14171c</span>
               </div>
             </div>
           )}
         </div>
 
         {/* 2. Grid Display */}
-        <div className="border border-[#383838] rounded bg-[#2b2b2b]">
+        <div
+          onClick={() => setSelectedDisplayKey('grid')}
+          className={`border rounded ${selectedDisplayKey === 'grid' ? 'border-[#3498db] bg-[#2d313a]' : 'border-[#383838] bg-[#2b2b2b]'}`}
+        >
           <div className="flex items-center justify-between px-2 py-1 hover:bg-[#383838]">
             <div className="flex items-center space-x-1.5">
               <button onClick={() => toggleExpand('grid')} className="text-gray-400 hover:text-white">
@@ -108,7 +138,10 @@ export const RvizDisplaysPanel: React.FC = () => {
         </div>
 
         {/* 3. RobotModel Display */}
-        <div className="border border-[#383838] rounded bg-[#2b2b2b]">
+        <div
+          onClick={() => setSelectedDisplayKey('robotModel')}
+          className={`border rounded ${selectedDisplayKey === 'robotModel' ? 'border-[#3498db] bg-[#2d313a]' : 'border-[#383838] bg-[#2b2b2b]'}`}
+        >
           <div className="flex items-center justify-between px-2 py-1 hover:bg-[#383838]">
             <div className="flex items-center space-x-1.5">
               <button onClick={() => toggleExpand('robotModel')} className="text-gray-400 hover:text-white">
@@ -145,7 +178,10 @@ export const RvizDisplaysPanel: React.FC = () => {
         </div>
 
         {/* 4. TF Display */}
-        <div className="border border-[#383838] rounded bg-[#2b2b2b]">
+        <div
+          onClick={() => setSelectedDisplayKey('tf')}
+          className={`border rounded ${selectedDisplayKey === 'tf' ? 'border-[#3498db] bg-[#2d313a]' : 'border-[#383838] bg-[#2b2b2b]'}`}
+        >
           <div className="flex items-center justify-between px-2 py-1 hover:bg-[#383838]">
             <div className="flex items-center space-x-1.5">
               <button onClick={() => toggleExpand('tf')} className="text-gray-400 hover:text-white">
@@ -185,7 +221,10 @@ export const RvizDisplaysPanel: React.FC = () => {
         </div>
 
         {/* 5. LaserScan Display */}
-        <div className="border border-[#383838] rounded bg-[#2b2b2b]">
+        <div
+          onClick={() => setSelectedDisplayKey('laserScan')}
+          className={`border rounded ${selectedDisplayKey === 'laserScan' ? 'border-[#3498db] bg-[#2d313a]' : 'border-[#383838] bg-[#2b2b2b]'}`}
+        >
           <div className="flex items-center justify-between px-2 py-1 hover:bg-[#383838]">
             <div className="flex items-center space-x-1.5">
               <button onClick={() => toggleExpand('laserScan')} className="text-gray-400 hover:text-white">
@@ -234,7 +273,10 @@ export const RvizDisplaysPanel: React.FC = () => {
         </div>
 
         {/* 6. Map Display (Occupancy Grid) */}
-        <div className="border border-[#383838] rounded bg-[#2b2b2b]">
+        <div
+          onClick={() => setSelectedDisplayKey('map')}
+          className={`border rounded ${selectedDisplayKey === 'map' ? 'border-[#3498db] bg-[#2d313a]' : 'border-[#383838] bg-[#2b2b2b]'}`}
+        >
           <div className="flex items-center justify-between px-2 py-1 hover:bg-[#383838]">
             <div className="flex items-center space-x-1.5">
               <button onClick={() => toggleExpand('map')} className="text-gray-400 hover:text-white">
@@ -274,7 +316,10 @@ export const RvizDisplaysPanel: React.FC = () => {
         </div>
 
         {/* 7. Global Costmap Display */}
-        <div className="border border-[#383838] rounded bg-[#2b2b2b]">
+        <div
+          onClick={() => setSelectedDisplayKey('globalCostmap')}
+          className={`border rounded ${selectedDisplayKey === 'globalCostmap' ? 'border-[#3498db] bg-[#2d313a]' : 'border-[#383838] bg-[#2b2b2b]'}`}
+        >
           <div className="flex items-center justify-between px-2 py-1 hover:bg-[#383838]">
             <div className="flex items-center space-x-1.5">
               <button onClick={() => toggleExpand('globalCostmap')} className="text-gray-400 hover:text-white">
@@ -303,7 +348,10 @@ export const RvizDisplaysPanel: React.FC = () => {
         </div>
 
         {/* 8. Path Display (Global Navigation Path) */}
-        <div className="border border-[#383838] rounded bg-[#2b2b2b]">
+        <div
+          onClick={() => setSelectedDisplayKey('path')}
+          className={`border rounded ${selectedDisplayKey === 'path' ? 'border-[#3498db] bg-[#2d313a]' : 'border-[#383838] bg-[#2b2b2b]'}`}
+        >
           <div className="flex items-center justify-between px-2 py-1 hover:bg-[#383838]">
             <div className="flex items-center space-x-1.5">
               <button onClick={() => toggleExpand('path')} className="text-gray-400 hover:text-white">
@@ -332,7 +380,10 @@ export const RvizDisplaysPanel: React.FC = () => {
         </div>
 
         {/* 9. Trajectory History */}
-        <div className="border border-[#383838] rounded bg-[#2b2b2b]">
+        <div
+          onClick={() => setSelectedDisplayKey('trajectory')}
+          className={`border rounded ${selectedDisplayKey === 'trajectory' ? 'border-[#3498db] bg-[#2d313a]' : 'border-[#383838] bg-[#2b2b2b]'}`}
+        >
           <div className="flex items-center justify-between px-2 py-1 hover:bg-[#383838]">
             <div className="flex items-center space-x-1.5">
               <button onClick={() => toggleExpand('trajectory')} className="text-gray-400 hover:text-white">
@@ -357,22 +408,65 @@ export const RvizDisplaysPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* Classic RViz bottom buttons */}
+      {/* Classic RViz bottom buttons: Add, Duplicate, Remove */}
       <div className="p-2 bg-[#1f1f1f] border-t border-[#333] flex items-center justify-between space-x-1 text-[11px]">
-        <button className="flex-1 py-1 bg-[#383838] hover:bg-[#484848] text-gray-200 rounded flex items-center justify-center space-x-1">
+        <button
+          onClick={() => setShowAddModal(true)}
+          title="Add a new Display layer"
+          className="flex-1 py-1 bg-[#383838] hover:bg-[#484848] text-gray-200 rounded flex items-center justify-center space-x-1"
+        >
           <Plus size={11} />
           <span>Add</span>
         </button>
-        <button className="flex-1 py-1 bg-[#383838] hover:bg-[#484848] text-gray-200 rounded flex items-center justify-center space-x-1">
+        <button
+          onClick={handleDuplicate}
+          title="Duplicate / Enable selected Display"
+          className="flex-1 py-1 bg-[#383838] hover:bg-[#484848] text-gray-200 rounded flex items-center justify-center space-x-1"
+        >
           <Copy size={11} />
           <span>Duplicate</span>
         </button>
-        <button className="flex-1 py-1 bg-[#383838] hover:bg-[#484848] text-gray-200 rounded flex items-center justify-center space-x-1">
+        <button
+          onClick={handleRemove}
+          title="Hide / Remove selected Display"
+          className="flex-1 py-1 bg-[#383838] hover:bg-[#484848] text-gray-200 rounded flex items-center justify-center space-x-1 text-red-300"
+        >
           <Trash2 size={11} />
           <span>Remove</span>
         </button>
       </div>
+
+      {/* Add Display Modal Dialog */}
+      {showAddModal && (
+        <div className="absolute inset-0 z-50 bg-[#1c1c1f]/95 p-3 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between pb-2 border-b border-[#3c3c40]">
+              <span className="font-bold text-white text-xs">Add Display Layer</span>
+              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-white">
+                <X size={14} />
+              </button>
+            </div>
+            <div className="py-2 space-y-1">
+              {(Object.keys(displays) as Array<keyof typeof displays>).map((key) => (
+                <button
+                  key={key}
+                  onClick={() => handleAddDisplay(key)}
+                  className="w-full text-left px-2 py-1.5 rounded hover:bg-[#3498db] hover:text-white flex items-center justify-between text-[11px] text-gray-300"
+                >
+                  <span className="capitalize">{key}</span>
+                  <span className="text-[10px] text-gray-400">{displays[key].visible ? 'Active' : 'Hidden'}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            onClick={() => setShowAddModal(false)}
+            className="w-full py-1 bg-[#444] text-white rounded text-xs"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
     </div>
   );
 };
-

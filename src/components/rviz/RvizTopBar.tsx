@@ -2,24 +2,13 @@ import React from 'react';
 import {
   Hand,
   Camera,
-  MousePointer,
   Navigation2,
   MapPin,
   RotateCcw,
-  Layers,
-  Sliders,
 } from 'lucide-react';
 import { useSimulationStore } from '../../state/simulationStore';
 
-interface RvizTopBarProps {
-  onToggleDisplays?: () => void;
-  onToggleViews?: () => void;
-}
-
-export const RvizTopBar: React.FC<RvizTopBarProps> = ({
-  onToggleDisplays,
-  onToggleViews,
-}) => {
+export const RvizTopBar: React.FC = () => {
   const rvizTool = useSimulationStore((s) => s.rvizTool);
   const setRvizTool = useSimulationStore((s) => s.setRvizTool);
   const resetSimulation = useSimulationStore((s) => s.resetSimulation);

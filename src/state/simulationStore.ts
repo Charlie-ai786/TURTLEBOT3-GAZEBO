@@ -76,6 +76,12 @@ export interface SimulationStore {
   selectedObjectId: string | null;
   activeTransformTool: 'select' | 'translate' | 'rotate';
   showCollisionGeometry: boolean;
+  showGridFloor: boolean;
+  showShadows: boolean;
+  lowPerformanceMode: boolean;
+  lidarRayCount: number;
+  sensorNoise: boolean;
+
   setEnvironment: (world: WorldEnvironmentType) => void;
   addObject: (type: SimObject['type'], position?: { x: number; y: number; z: number }) => void;
   updateObject: (id: string, updates: Partial<SimObject>) => void;
@@ -83,6 +89,11 @@ export interface SimulationStore {
   selectObject: (id: string | null) => void;
   setActiveTransformTool: (tool: 'select' | 'translate' | 'rotate') => void;
   toggleCollisionGeometry: () => void;
+  toggleGridFloor: () => void;
+  toggleShadows: () => void;
+  toggleLowPerformanceMode: () => void;
+  setLidarRayCount: (count: number) => void;
+  toggleSensorNoise: () => void;
 
   // Robot State & Teleop
   robot: RobotState;
@@ -128,11 +139,16 @@ export interface SimulationStore {
   isTerminalOpen: boolean;
   isPracticalsOpen: boolean;
   isTopicMonitorOpen: boolean;
+  isSettingsOpen: boolean;
   activePracticalId: string | null;
+  completedPracticals: Record<string, boolean>;
+
   toggleTerminal: () => void;
   togglePracticals: () => void;
   toggleTopicMonitor: () => void;
+  toggleSettings: () => void;
   setActivePracticalId: (id: string | null) => void;
+  markPracticalCompleted: (id: string, completed: boolean) => void;
 
   // Main Simulation Tick (Physics + Sensors + Navigation + Mapping)
   tick: (deltaSeconds: number) => void;
@@ -212,6 +228,11 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   selectedObjectId: null,
   activeTransformTool: 'select',
   showCollisionGeometry: false,
+  showGridFloor: true,
+  showShadows: true,
+  lowPerformanceMode: false,
+  lidarRayCount: 360,
+  sensorNoise: true,
 
   setEnvironment: (worldKey) => {
     const worldDef = PREDEFINED_WORLDS[worldKey];
@@ -293,12 +314,24 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   selectObject: (id) => set({ selectedObjectId: id }),
   setActiveTransformTool: (tool) => set({ activeTransformTool: tool }),
   toggleCollisionGeometry: () => set((state) => ({ showCollisionGeometry: !state.showCollisionGeometry })),
+  toggleGridFloor: () => set((state) => ({ showGridFloor: !state.showGridFloor })),
+  toggleShadows: () => set((state) => ({ showShadows: !state.showShadows })),
+  toggleLowPerformanceMode: () =>
+    set((state) => ({
+      lowPerformanceMode: !state.lowPerformanceMode,
+      lidarRayCount: !state.lowPerformanceMode ? 180 : 360,
+      showShadows: !state.lowPerformanceMode ? false : state.showShadows,
+    })),
+  setLidarRayCount: (count) => set({ lidarRayCount: count }),
+  toggleSensorNoise: () => set((state) => ({ sensorNoise: !state.sensorNoise })),
 
   robot: { ...INITIAL_ROBOT_STATE },
   trajectory: [{ x: INITIAL_ROBOT_STATE.x, y: INITIAL_ROBOT_STATE.y }],
   lastCollision: false,
 
   setTeleopVelocity: (linear, angular) => {
+    if (get().isPaused) return; // Prevent driving when simulation is paused
+
     set((state) => ({
       robot: {
         ...state.robot,
@@ -466,19 +499,30 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
   isTerminalOpen: false,
   isPracticalsOpen: false,
   isTopicMonitorOpen: false,
+  isSettingsOpen: false,
   activePracticalId: null,
+  completedPracticals: {},
 
   toggleTerminal: () => set((state) => ({ isTerminalOpen: !state.isTerminalOpen })),
   togglePracticals: () => set((state) => ({ isPracticalsOpen: !state.isPracticalsOpen })),
   toggleTopicMonitor: () => set((state) => ({ isTopicMonitorOpen: !state.isTopicMonitorOpen })),
+  toggleSettings: () => set((state) => ({ isSettingsOpen: !state.isSettingsOpen })),
   setActivePracticalId: (id) => set({ activePracticalId: id }),
+  markPracticalCompleted: (id, completed) =>
+    set((state) => ({
+      completedPracticals: {
+        ...state.completedPracticals,
+        [id]: completed,
+      },
+    })),
 
   // Simulation step tick
   tick: (dt: number) => {
     const state = get();
     if (state.isPaused) return;
 
-    const effectiveDt = Math.min(dt, 0.05);
+    // Safety clamp dt to avoid spiral on lag / tab switch
+    const effectiveDt = Math.min(dt, 0.033);
 
     // 1. Navigation Controller (if autonomous navigation is active)
     let effectiveRobot = state.robot;
@@ -516,12 +560,13 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
     const ldsX = updatedRobot.x - 0.032 * Math.cos(updatedRobot.heading);
     const ldsY = updatedRobot.y - 0.032 * Math.sin(updatedRobot.heading);
 
+    const rayCount = state.lowPerformanceMode ? 180 : state.lidarRayCount;
     const { scanData, hitPoints } = simulateLidar(
       ldsX,
       ldsY,
       updatedRobot.heading,
       state.objects,
-      360,
+      rayCount,
       0.12,
       3.5
     );
@@ -585,6 +630,34 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
       },
     });
 
+    // Publish /imu
+    rosBus.publish('/imu', {
+      header: { seq: state.iterations, stamp: { secs: Math.floor(newSimTime), nsecs: 0 }, frame_id: 'imu_link' },
+      orientation: {
+        x: 0,
+        y: 0,
+        z: Math.sin(updatedRobot.heading / 2),
+        w: Math.cos(updatedRobot.heading / 2),
+      },
+      angular_velocity: { x: 0, y: 0, z: updatedRobot.angularVelocity },
+      linear_acceleration: { x: 0, y: 0, z: 9.81 },
+    });
+
+    // Publish /map when mapping
+    if (state.occupancyGridMap.isMapping && state.iterations % 5 === 0) {
+      rosBus.publish('/map', {
+        header: { seq: state.iterations, stamp: { secs: Math.floor(newSimTime), nsecs: 0 }, frame_id: 'map' },
+        info: {
+          map_load_time: { secs: Math.floor(newSimTime), nsecs: 0 },
+          resolution: currentMapData.resolution,
+          width: currentMapData.width,
+          height: currentMapData.height,
+          origin: { position: { x: currentMapData.originX, y: currentMapData.originY, z: 0 }, orientation: { x: 0, y: 0, z: 0, w: 1 } },
+        },
+        data: currentMapData.data,
+      });
+    }
+
     set({
       simTime: newSimTime,
       iterations: state.iterations + 1,
@@ -599,4 +672,3 @@ export const useSimulationStore = create<SimulationStore>((set, get) => ({
     });
   },
 }));
-

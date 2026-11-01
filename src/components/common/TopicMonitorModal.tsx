@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, X, RefreshCw, Radio, Server } from 'lucide-react';
+import { Activity, X, Radio, Play, Pause, Trash2 } from 'lucide-react';
 import { useSimulationStore } from '../../state/simulationStore';
 import { rosBus } from '../../ros/messageBus';
 import { TopicInfo } from '../../types/ros';
@@ -8,23 +8,37 @@ export const TopicMonitorModal: React.FC = () => {
   const isTopicMonitorOpen = useSimulationStore((s) => s.isTopicMonitorOpen);
   const toggleTopicMonitor = useSimulationStore((s) => s.toggleTopicMonitor);
 
-  const [topics, setTopics] = useState<TopicInfo[]>([]);
+  const [topics, setTopics] = useState<TopicInfo[]>(() => rosBus.getTopics());
   const [selectedTopic, setSelectedTopic] = useState<string>('/cmd_vel');
+  const [isMonitoringPaused, setIsMonitoringPaused] = useState(false);
+  const [clearedTopics, setClearedTopics] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (!isTopicMonitorOpen) return;
+    if (!isTopicMonitorOpen || isMonitoringPaused) return;
 
     const interval = setInterval(() => {
       setTopics(rosBus.getTopics());
-    }, 500);
+    }, 400);
 
-    setTopics(rosBus.getTopics());
     return () => clearInterval(interval);
-  }, [isTopicMonitorOpen]);
+  }, [isTopicMonitorOpen, isMonitoringPaused]);
 
   if (!isTopicMonitorOpen) return null;
 
   const activeTopicInfo = topics.find((t) => t.name === selectedTopic) || topics[0];
+  const isCleared = activeTopicInfo && clearedTopics[activeTopicInfo.name];
+
+  const handleClearMessages = () => {
+    if (activeTopicInfo) {
+      setClearedTopics((prev) => ({ ...prev, [activeTopicInfo.name]: true }));
+    }
+  };
+
+  const handleSelectTopic = (topicName: string) => {
+    setSelectedTopic(topicName);
+    // Un-clear when re-selecting or receiving new
+    setClearedTopics((prev) => ({ ...prev, [topicName]: false }));
+  };
 
   return (
     <div className="fixed inset-x-12 inset-y-10 z-50 bg-[#1e1e1e] border border-[#555] rounded-xl shadow-2xl flex flex-col overflow-hidden text-xs text-[#dcdcdc] select-text font-mono">
@@ -34,19 +48,49 @@ export const TopicMonitorModal: React.FC = () => {
           <Activity className="text-cyan-400" size={18} />
           <span>Simulated ROS Message Bus & Topic Monitor (rostopic GUI)</span>
         </div>
-        <button
-          onClick={toggleTopicMonitor}
-          className="p-1 hover:bg-[#34495e] rounded text-gray-300 hover:text-white"
-        >
-          <X size={18} />
-        </button>
+
+        {/* Action Controls: Pause/Resume, Clear, Close */}
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setIsMonitoringPaused(!isMonitoringPaused)}
+            className={`px-2 py-1 rounded text-xs font-semibold flex items-center space-x-1 ${
+              isMonitoringPaused
+                ? 'bg-emerald-700 hover:bg-emerald-600 text-white'
+                : 'bg-amber-700 hover:bg-amber-600 text-white'
+            }`}
+          >
+            {isMonitoringPaused ? <Play size={12} fill="currentColor" /> : <Pause size={12} fill="currentColor" />}
+            <span>{isMonitoringPaused ? 'Resume Monitoring' : 'Pause Monitoring'}</span>
+          </button>
+
+          <button
+            onClick={handleClearMessages}
+            className="px-2 py-1 bg-[#3a3f4a] hover:bg-[#4b5260] text-gray-200 rounded text-xs flex items-center space-x-1 border border-[#555]"
+            title="Clear current topic payload"
+          >
+            <Trash2 size={12} />
+            <span>Clear</span>
+          </button>
+
+          <button
+            onClick={toggleTopicMonitor}
+            className="p-1 hover:bg-[#34495e] rounded text-gray-300 hover:text-white"
+          >
+            <X size={18} />
+          </button>
+        </div>
       </div>
 
       {/* Info Notice Banner */}
       <div className="bg-[#1a252f] px-4 py-1.5 border-b border-[#2c3e50] text-[11px] text-cyan-300 flex items-center justify-between font-sans">
-        <span>
-          ℹ️ Notice: This message bus is an educational JavaScript simulation layer providing authentic ROS topics, message types, and serialization without requiring an Ubuntu host.
-        </span>
+        <div className="flex items-center space-x-2">
+          <span className={`w-2 h-2 rounded-full ${isMonitoringPaused ? 'bg-amber-400' : 'bg-emerald-400 animate-pulse'}`}></span>
+          <span>
+            {isMonitoringPaused
+              ? 'Monitoring is currently PAUSED. Live message updates frozen.'
+              : 'Educational simulation layer publishing standard ROS messages.'}
+          </span>
+        </div>
         <span className="text-gray-400 font-mono text-[10px]">ROS Master: http://localhost:11311</span>
       </div>
 
@@ -63,7 +107,7 @@ export const TopicMonitorModal: React.FC = () => {
             return (
               <div
                 key={t.name}
-                onClick={() => setSelectedTopic(t.name)}
+                onClick={() => handleSelectTopic(t.name)}
                 className={`p-2 rounded border cursor-pointer transition-colors ${
                   isSelected
                     ? 'bg-[#2980b9] border-[#3498db] text-white'
@@ -132,12 +176,14 @@ export const TopicMonitorModal: React.FC = () => {
                   <span className="text-emerald-400">Total Count: {activeTopicInfo.messageCount}</span>
                 </div>
                 <div className="bg-[#0a0a0c] p-3 rounded-lg border border-[#2a2b30] text-gray-300 overflow-x-auto max-h-96">
-                  {activeTopicInfo.lastMessage ? (
+                  {isCleared ? (
+                    <div className="text-gray-500 italic p-4 text-center">Payload log cleared. New messages will appear on next update.</div>
+                  ) : activeTopicInfo.lastMessage ? (
                     <pre className="text-[11px] leading-relaxed">
                       {JSON.stringify(activeTopicInfo.lastMessage, null, 2)}
                     </pre>
                   ) : (
-                    <div className="text-gray-500 italic">Awaiting messages on this topic...</div>
+                    <div className="text-gray-500 italic p-4 text-center">Awaiting messages on this topic...</div>
                   )}
                 </div>
               </div>
@@ -150,4 +196,3 @@ export const TopicMonitorModal: React.FC = () => {
     </div>
   );
 };
-

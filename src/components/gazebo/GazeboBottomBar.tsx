@@ -3,7 +3,6 @@ import { useSimulationStore } from '../../state/simulationStore';
 import { AlertTriangle, Activity } from 'lucide-react';
 
 export const GazeboBottomBar: React.FC = () => {
-  const simTime = useSimulationStore((s) => s.simTime);
   const iterations = useSimulationStore((s) => s.iterations);
   const robot = useSimulationStore((s) => s.robot);
   const lastCollision = useSimulationStore((s) => s.lastCollision);

@@ -173,13 +173,12 @@ export const GazeboToolbar: React.FC = () => {
 
       <div className="flex-1"></div>
 
-      {/* 5. Viewport Camera Presets */}
+      {/* 5. Viewport Camera Presets (Perspective, Top, Front, Left, Right) */}
       <div className="flex items-center space-x-1 text-[11px] text-gray-400">
         <Camera size={13} />
         <span>View:</span>
         <button
           onClick={() => {
-            // trigger camera change event
             window.dispatchEvent(new CustomEvent('gazebo-camera-preset', { detail: 'perspective' }));
           }}
           className="px-1.5 py-0.5 hover:bg-[#444] rounded text-gray-300"
@@ -192,10 +191,25 @@ export const GazeboToolbar: React.FC = () => {
           }}
           className="px-1.5 py-0.5 hover:bg-[#444] rounded text-gray-300"
         >
-          Top (2D)
+          Top
+        </button>
+        <button
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent('gazebo-camera-preset', { detail: 'front' }));
+          }}
+          className="px-1.5 py-0.5 hover:bg-[#444] rounded text-gray-300"
+        >
+          Front
+        </button>
+        <button
+          onClick={() => {
+            window.dispatchEvent(new CustomEvent('gazebo-camera-preset', { detail: 'left' }));
+          }}
+          className="px-1.5 py-0.5 hover:bg-[#444] rounded text-gray-300"
+        >
+          Left
         </button>
       </div>
     </div>
   );
 };
-

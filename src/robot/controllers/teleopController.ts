@@ -5,6 +5,10 @@ export function useKeyboardTeleop() {
   const setTeleopVelocity = useSimulationStore((s) => s.setTeleopVelocity);
   const emergencyStop = useSimulationStore((s) => s.emergencyStop);
   const isTerminalOpen = useSimulationStore((s) => s.isTerminalOpen);
+  const isPracticalsOpen = useSimulationStore((s) => s.isPracticalsOpen);
+  const isTopicMonitorOpen = useSimulationStore((s) => s.isTopicMonitorOpen);
+  const isSettingsOpen = useSimulationStore((s) => s.isSettingsOpen);
+  const isPaused = useSimulationStore((s) => s.isPaused);
 
   useEffect(() => {
     const keysPressed: Record<string, boolean> = {};
@@ -16,8 +20,16 @@ export function useKeyboardTeleop() {
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
         target.isContentEditable ||
-        isTerminalOpen
+        isTerminalOpen ||
+        isPracticalsOpen ||
+        isTopicMonitorOpen ||
+        isSettingsOpen
       ) {
+        return;
+      }
+
+      // If simulation is paused, ignore drive commands
+      if (isPaused && e.key.toLowerCase() !== ' ') {
         return;
       }
 
@@ -68,6 +80,5 @@ export function useKeyboardTeleop() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [setTeleopVelocity, emergencyStop, isTerminalOpen]);
+  }, [setTeleopVelocity, emergencyStop, isTerminalOpen, isPracticalsOpen, isTopicMonitorOpen, isSettingsOpen, isPaused]);
 }
-

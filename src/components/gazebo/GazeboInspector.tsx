@@ -117,6 +117,7 @@ export const GazeboInspector: React.FC = () => {
               />
             </div>
 
+            {/* Position */}
             <div className="border-t border-[#444] pt-2">
               <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block mb-1">
                 Position (m)
@@ -167,6 +168,58 @@ export const GazeboInspector: React.FC = () => {
               </div>
             </div>
 
+            {/* Rotation Roll / Pitch / Yaw */}
+            <div className="border-t border-[#444] pt-2">
+              <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block mb-1">
+                Rotation Roll / Pitch / Yaw (rad)
+              </label>
+              <div className="grid grid-cols-3 gap-1.5">
+                <div>
+                  <span className="text-[10px] text-gray-400">Roll:</span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={selectedObj.rotation.x || 0}
+                    onChange={(e) =>
+                      updateObject(selectedObj.id, {
+                        rotation: { ...selectedObj.rotation, x: parseFloat(e.target.value) || 0 },
+                      })
+                    }
+                    className="w-full bg-[#1e1e1e] border border-[#555] rounded px-1.5 py-1 text-white text-[11px]"
+                  />
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-400">Pitch:</span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={selectedObj.rotation.y || 0}
+                    onChange={(e) =>
+                      updateObject(selectedObj.id, {
+                        rotation: { ...selectedObj.rotation, y: parseFloat(e.target.value) || 0 },
+                      })
+                    }
+                    className="w-full bg-[#1e1e1e] border border-[#555] rounded px-1.5 py-1 text-white text-[11px]"
+                  />
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-400">Yaw:</span>
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={selectedObj.rotation.z || 0}
+                    onChange={(e) =>
+                      updateObject(selectedObj.id, {
+                        rotation: { ...selectedObj.rotation, z: parseFloat(e.target.value) || 0 },
+                      })
+                    }
+                    className="w-full bg-[#1e1e1e] border border-[#555] rounded px-1.5 py-1 text-white text-[11px]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Dimensions */}
             <div className="border-t border-[#444] pt-2">
               <label className="text-[10px] text-gray-400 uppercase font-bold tracking-wider block mb-1">
                 Dimensions / Size (m)
@@ -242,4 +295,3 @@ export const GazeboInspector: React.FC = () => {
     </div>
   );
 };
-

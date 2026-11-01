@@ -6,53 +6,76 @@ import { GazeboWorkspace } from './components/gazebo/GazeboWorkspace';
 import { RvizWorkspace } from './components/rviz/RvizWorkspace';
 import { CombinedWorkspace } from './components/common/CombinedWorkspace';
 import { TeleopHud } from './components/common/TeleopHud';
-import { RosTerminal } from './components/terminal/RosTerminal';
+import { TerminalWindow } from './terminal/components/TerminalWindow';
 import { PracticalsPanel } from './components/learning/PracticalsPanel';
 import { TopicMonitorModal } from './components/common/TopicMonitorModal';
+import { SettingsModal } from './components/common/SettingsModal';
 
 export function App() {
   const workspaceMode = useSimulationStore((s) => s.workspaceMode);
+  const isTerminalOpen = useSimulationStore((s) => s.isTerminalOpen);
   const tick = useSimulationStore((s) => s.tick);
 
-  // Activate keyboard teleoperation (W/A/S/D, Arrows, Space)
   useKeyboardTeleop();
 
-  // High-performance fixed/adaptive simulation update loop (60 FPS)
   useEffect(() => {
     let lastTime = performance.now();
     let frameId: number;
 
+    const handleVisibilityChange = () => {
+      lastTime = performance.now();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     const simLoop = (now: number) => {
-      const dt = (now - lastTime) / 1000;
+      const rawDt = (now - lastTime) / 1000;
       lastTime = now;
-
-      // Advance physics, raycasting LiDAR, SLAM mapping, and navigation controllers
+      const dt = rawDt > 0.1 ? 0.016 : rawDt;
       tick(dt);
-
       frameId = requestAnimationFrame(simLoop);
     };
-
     frameId = requestAnimationFrame(simLoop);
-    return () => cancelAnimationFrame(frameId);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [tick]);
 
   return (
-    <div className="w-screen h-screen flex flex-col bg-[#121214] text-white overflow-hidden select-none">
-      {/* 1. Global Navigation Bar */}
+    /*
+     * Root shell: full-viewport flex column.
+     * Children:
+     *   1. TopNavigation  – fixed height, flex-shrink-0
+     *   2. Workspace      – flex-1, min-h-0  (fills remaining space exactly)
+     *   3. TerminalWindow – in-flow flex child, its own height drives shrink
+     *
+     * NO position:fixed on the terminal. NO paddingBottom on the workspace.
+     * This is the only layout that guarantees the R3F canvas always fills its
+     * parent with zero gaps regardless of terminal height.
+     */
+    <div
+      className="flex flex-col bg-[#121214] text-white overflow-hidden select-none"
+      style={{ width: '100vw', height: '100dvh' }}
+    >
+      {/* ① Navigation – never shrinks */}
       <TopNavigation />
 
-      {/* 2. Active Workspace Router */}
-      <div className="flex-1 relative overflow-hidden">
+      {/* ② Workspace – absorbs ALL remaining vertical space */}
+      <div className="flex-1 relative overflow-hidden min-h-0">
         {workspaceMode === 'gazebo' && <GazeboWorkspace />}
         {workspaceMode === 'rviz' && <RvizWorkspace />}
         {workspaceMode === 'combined' && <CombinedWorkspace />}
       </div>
 
-      {/* 3. Floating Overlays & Utilities */}
+      {/* ③ Terminal – in-flow, height controlled by TerminalWindow itself */}
+      {isTerminalOpen && <TerminalWindow />}
+
+      {/* Floating overlays (do NOT affect layout) */}
       <TeleopHud />
-      <RosTerminal />
       <PracticalsPanel />
       <TopicMonitorModal />
+      <SettingsModal />
     </div>
   );
 }

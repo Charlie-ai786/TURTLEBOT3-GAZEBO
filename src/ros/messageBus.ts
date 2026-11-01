@@ -2,11 +2,6 @@ import {
   RosTwist,
   RosLaserScan,
   RosOdometry,
-  RosTFMessage,
-  RosOccupancyGrid,
-  RosPath,
-  RosImu,
-  RosPose,
   TopicInfo,
 } from '../types/ros';
 
@@ -139,6 +134,18 @@ class RosMessageBus {
 
     if (type === 'geometry_msgs/PoseStamped') {
       return `header:\n  frame_id: "${msg.header?.frame_id || 'map'}"\npose:\n  position: [x: ${msg.pose?.position?.x.toFixed(2)}, y: ${msg.pose?.position?.y.toFixed(2)}]\n  orientation: [w: ${msg.pose?.orientation?.w.toFixed(2)}, z: ${msg.pose?.orientation?.z.toFixed(2)}]`;
+    }
+
+    if (type === 'sensor_msgs/Imu') {
+      return `header:\n  seq: ${msg.header?.seq || 0}\n  frame_id: "${msg.header?.frame_id || 'imu_link'}"\norientation: [x: 0.0, y: 0.0, z: ${msg.orientation?.z?.toFixed(3) || 0.0}, w: ${msg.orientation?.w?.toFixed(3) || 1.0}]\nangular_velocity: [x: 0.0, y: 0.0, z: ${msg.angular_velocity?.z?.toFixed(3) || 0.0}]\nlinear_acceleration: [x: 0.0, y: 0.0, z: 9.810]`;
+    }
+
+    if (type === 'nav_msgs/OccupancyGrid') {
+      return `header:\n  seq: ${msg.header?.seq || 0}\n  frame_id: "map"\ninfo:\n  resolution: ${msg.info?.resolution || 0.05}\n  width: ${msg.info?.width || 384}\n  height: ${msg.info?.height || 384}\ndata: [${msg.data?.length || 0} cells]`;
+    }
+
+    if (type === 'nav_msgs/Path') {
+      return `header:\n  frame_id: "map"\nposes: [${msg.poses?.length || 0} waypoints]`;
     }
 
     try {

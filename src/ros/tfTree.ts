@@ -1,14 +1,10 @@
 import { RobotState, TfFrame } from '../types/simulation';
 import { RosTFMessage } from '../types/ros';
-import { rosBus } from './messageBus';
 
 export function computeTfTree(robot: RobotState, simTimeSec: number): {
   frames: TfFrame[];
   rosTfMessage: RosTFMessage;
 } {
-  const cosH = Math.cos(robot.heading);
-  const sinH = Math.sin(robot.heading);
-
   // Quaternions for 2D yaw: q = [0, 0, sin(yaw/2), cos(yaw/2)]
   const halfYaw = robot.heading / 2;
   const qz = Math.sin(halfYaw);

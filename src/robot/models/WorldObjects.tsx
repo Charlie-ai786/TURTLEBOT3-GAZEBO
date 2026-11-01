@@ -6,6 +6,7 @@ interface WorldObjectsProps {
   selectedId: string | null;
   onSelectObject?: (id: string) => void;
   showCollisionWireframe?: boolean;
+  showGridFloor?: boolean;
 }
 
 export const WorldObjects: React.FC<WorldObjectsProps> = ({
@@ -13,6 +14,7 @@ export const WorldObjects: React.FC<WorldObjectsProps> = ({
   selectedId,
   onSelectObject,
   showCollisionWireframe = false,
+  showGridFloor = true,
 }) => {
   return (
     <group>
@@ -23,11 +25,13 @@ export const WorldObjects: React.FC<WorldObjectsProps> = ({
       </mesh>
 
       {/* Grid Floor Overlay */}
-      <gridHelper
-        args={[40, 40, '#333333', '#555555']}
-        rotation={[Math.PI / 2, 0, 0]}
-        position={[0, 0, 0.001]}
-      />
+      {showGridFloor && (
+        <gridHelper
+          args={[40, 40, '#333333', '#555555']}
+          rotation={[Math.PI / 2, 0, 0]}
+          position={[0, 0, 0.001]}
+        />
+      )}
 
       {/* Render All Scene Objects */}
       {objects.map((obj) => {
@@ -119,4 +123,3 @@ export const WorldObjects: React.FC<WorldObjectsProps> = ({
     </group>
   );
 };
-

@@ -1,4 +1,4 @@
-import { CostmapData, LaserScanData, MapData, RobotState } from '../types/simulation';
+import { LaserScanData, MapData, RobotState } from '../types/simulation';
 
 export class CostmapEngine {
   public width: number;

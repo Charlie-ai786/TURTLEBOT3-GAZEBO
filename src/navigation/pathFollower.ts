@@ -23,7 +23,6 @@ export function executePathFollowing(
 
   const goal = navState.goal;
   const distToGoal = Math.hypot(goal.x - robot.x, goal.y - robot.y);
-  const angleToGoal = Math.atan2(goal.y - robot.y, goal.x - robot.x);
 
   // 1. Check if goal position reached
   const positionTolerance = 0.10; // 10 cm

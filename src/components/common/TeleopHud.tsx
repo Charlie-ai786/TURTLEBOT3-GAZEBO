@@ -15,11 +15,17 @@ import { useSimulationStore } from '../../state/simulationStore';
 export const TeleopHud: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const robot = useSimulationStore((s) => s.robot);
+  const isPaused = useSimulationStore((s) => s.isPaused);
   const setTeleopVelocity = useSimulationStore((s) => s.setTeleopVelocity);
   const emergencyStop = useSimulationStore((s) => s.emergencyStop);
 
-  const handleDirClick = (lin: number, ang: number) => {
+  const handleDirStart = (lin: number, ang: number) => {
+    if (isPaused) return;
     setTeleopVelocity(lin, ang);
+  };
+
+  const handleDirEnd = () => {
+    setTeleopVelocity(0, 0);
   };
 
   return (
@@ -40,6 +46,13 @@ export const TeleopHud: React.FC = () => {
 
       {!collapsed && (
         <div className="p-2.5 space-y-2.5 text-xs">
+          {/* Pause Notice */}
+          {isPaused && (
+            <div className="bg-amber-950/80 border border-amber-600 p-1.5 rounded text-[10px] text-amber-200 text-center font-bold">
+              Simulation Paused — Click Play in top toolbar to drive
+            </div>
+          )}
+
           {/* Velocity & Pose Gauges */}
           <div className="grid grid-cols-2 gap-1.5 font-mono text-[11px]">
             <div className="bg-[#121212] p-1.5 rounded border border-[#333]">
@@ -72,11 +85,14 @@ export const TeleopHud: React.FC = () => {
           </div>
 
           {/* On-Screen D-Pad Controller */}
-          <div className="flex flex-col items-center space-y-1 pt-1">
+          <div className={`flex flex-col items-center space-y-1 pt-1 ${isPaused ? 'opacity-40 pointer-events-none' : ''}`}>
             {/* Forward */}
             <button
-              onMouseDown={() => handleDirClick(0.22, 0)}
-              onMouseUp={() => handleDirClick(0, 0)}
+              onMouseDown={() => handleDirStart(0.22, 0)}
+              onMouseUp={handleDirEnd}
+              onMouseLeave={handleDirEnd}
+              onTouchStart={() => handleDirStart(0.22, 0)}
+              onTouchEnd={handleDirEnd}
               className="w-10 h-10 bg-[#333] hover:bg-[#444] active:bg-[#2980b9] rounded flex items-center justify-center text-white shadow border border-[#555]"
               title="Forward (W / Up)"
             >
@@ -86,8 +102,11 @@ export const TeleopHud: React.FC = () => {
             {/* Turn Left, Stop, Turn Right */}
             <div className="flex items-center space-x-1">
               <button
-                onMouseDown={() => handleDirClick(0, 1.82)}
-                onMouseUp={() => handleDirClick(0, 0)}
+                onMouseDown={() => handleDirStart(0, 1.82)}
+                onMouseUp={handleDirEnd}
+                onMouseLeave={handleDirEnd}
+                onTouchStart={() => handleDirStart(0, 1.82)}
+                onTouchEnd={handleDirEnd}
                 className="w-10 h-10 bg-[#333] hover:bg-[#444] active:bg-[#2980b9] rounded flex items-center justify-center text-white shadow border border-[#555]"
                 title="Turn Left (A / Left)"
               >
@@ -103,8 +122,11 @@ export const TeleopHud: React.FC = () => {
               </button>
 
               <button
-                onMouseDown={() => handleDirClick(0, -1.82)}
-                onMouseUp={() => handleDirClick(0, 0)}
+                onMouseDown={() => handleDirStart(0, -1.82)}
+                onMouseUp={handleDirEnd}
+                onMouseLeave={handleDirEnd}
+                onTouchStart={() => handleDirStart(0, -1.82)}
+                onTouchEnd={handleDirEnd}
                 className="w-10 h-10 bg-[#333] hover:bg-[#444] active:bg-[#2980b9] rounded flex items-center justify-center text-white shadow border border-[#555]"
                 title="Turn Right (D / Right)"
               >
@@ -114,8 +136,11 @@ export const TeleopHud: React.FC = () => {
 
             {/* Backward */}
             <button
-              onMouseDown={() => handleDirClick(-0.22, 0)}
-              onMouseUp={() => handleDirClick(0, 0)}
+              onMouseDown={() => handleDirStart(-0.22, 0)}
+              onMouseUp={handleDirEnd}
+              onMouseLeave={handleDirEnd}
+              onTouchStart={() => handleDirStart(-0.22, 0)}
+              onTouchEnd={handleDirEnd}
               className="w-10 h-10 bg-[#333] hover:bg-[#444] active:bg-[#2980b9] rounded flex items-center justify-center text-white shadow border border-[#555]"
               title="Backward (S / Down)"
             >
@@ -132,4 +157,3 @@ export const TeleopHud: React.FC = () => {
     </div>
   );
 };
-
